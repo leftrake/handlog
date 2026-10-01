@@ -11,6 +11,8 @@ import {
   endSession,
   getActiveSession,
   getSettings,
+  loadSampleData,
+  removeSampleData,
   moveTag,
   saveHand,
   setBlindLevel,
@@ -123,5 +125,24 @@ describe('clearAllData', () => {
     expect(await db.hands.count()).toBe(0)
     expect(await db.tags.count()).toBe(9)
     expect((await getSettings()).activeSessionId).toBeNull()
+  })
+})
+
+describe('sample data', () => {
+  it('loads idempotently, reuses existing tags, and removes cleanly', async () => {
+    const mine = await saveHand(await draftHand())
+    const first = await loadSampleData()
+    expect(first.hands).toBeGreaterThanOrEqual(20)
+    await loadSampleData()
+    expect(await db.hands.count()).toBe(first.hands + 1)
+    expect(await db.sessions.count()).toBe(first.sessions)
+    // Default tags such as "Bluff" are reused rather than duplicated.
+    const names = (await db.tags.toArray()).map((t) => t.name)
+    expect(names.filter((n) => n === 'Bluff')).toHaveLength(1)
+
+    await removeSampleData()
+    expect(await db.hands.count()).toBe(1)
+    expect(await db.hands.get(mine.id)).toBeDefined()
+    expect(await db.sessions.count()).toBe(0)
   })
 })

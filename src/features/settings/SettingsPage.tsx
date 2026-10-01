@@ -1,7 +1,9 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Button, Field, NumberInput, Page, PageHeader, Panel, Section, Segmented, TextInput } from '../../components/ui'
 import { useSettings } from '../../db/hooks'
-import { clearAllData, updateSettings } from '../../db/repo'
+import { db } from '../../db/db'
+import { clearAllData, loadSampleData, removeSampleData, updateSettings } from '../../db/repo'
 import type { DisplayUnit, TableSize, Theme } from '../../domain/types'
 import { TagManager } from './TagManager'
 
@@ -32,6 +34,41 @@ function DangerZone() {
         Clear all data
       </Button>
       {done && <p className="text-sm text-muted">All data cleared.</p>}
+    </Panel>
+  )
+}
+
+function DeveloperTools() {
+  const sampleCount = useLiveQuery(() => db.hands.filter((h) => !!h.sample).count(), []) ?? 0
+  const [msg, setMsg] = useState<string | null>(null)
+  return (
+    <Panel className="space-y-3">
+      <p className="text-sm text-muted">
+        Load about 20 realistic hands across five sessions to see the study views populated. Sample data is marked and
+        can be removed without touching your own hands.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          icon="download"
+          onClick={async () => {
+            const r = await loadSampleData()
+            setMsg(`Loaded ${r.hands} hands in ${r.sessions} sessions.`)
+          }}
+        >
+          {sampleCount ? 'Reload sample' : 'Load sample data'}
+        </Button>
+        <Button
+          icon="trash"
+          disabled={!sampleCount}
+          onClick={async () => {
+            await removeSampleData()
+            setMsg('Sample data removed.')
+          }}
+        >
+          Remove sample
+        </Button>
+      </div>
+      {msg && <p className="text-sm text-muted">{msg}</p>}
     </Panel>
   )
 }
@@ -115,6 +152,10 @@ export function SettingsPage() {
           <Panel>
             <TagManager />
           </Panel>
+        </Section>
+
+        <Section title="Developer">
+          <DeveloperTools />
         </Section>
 
         <Section title="Danger zone">

@@ -65,11 +65,12 @@ describe('hand context', () => {
 })
 
 describe('players', () => {
-  it('adds hero and every acting position once, keeping existing entries', () => {
+  it('adds hero and every involved position once, keeping existing entries and skipping pure folds', () => {
     const h = createHand(handContextFromSession(createSession(cash, 's1', 0)), 'h1', 5)
     h.heroPosition = 'CO'
     h.players = [{ position: 'BB', isHero: false, stack: 450, reads: 'sticky' }]
     h.actions = [
+      { id: 'z', street: 'preflop', position: 'UTG', type: 'fold' },
       { id: 'a', street: 'preflop', position: 'CO', type: 'raise', amount: 15 },
       { id: 'b', street: 'preflop', position: 'BB', type: 'call' },
     ]

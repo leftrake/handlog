@@ -1,5 +1,6 @@
 // Data access for sessions, hands, tags and settings. UI code calls these; never Dexie directly.
 import { createHand, handContextFromSession, handContextFromSettings, type HandContext } from '../domain/hand'
+import { buildSampleData } from '../domain/sampleData'
 import { createSession, sessionDefaultsFrom } from '../domain/session'
 import {
   DEFAULT_SETTINGS,
@@ -192,6 +193,43 @@ export async function moveTag(id: string, dir: -1 | 1): Promise<void> {
     ;[tags[i], tags[j]] = [tags[j], tags[i]]
     await db.tags.bulkPut(tags.map((t, order) => ({ ...t, order })))
   })
+}
+
+// ── sample data ──────────────────────────────────────────
+
+/** Remove any existing sample data, then add a fresh set (creating tags it uses if missing). */
+export async function loadSampleData(now = Date.now()): Promise<{ sessions: number; hands: number }> {
+  return db.transaction('rw', db.sessions, db.hands, db.tags, async () => {
+    await removeSampleData()
+    const tags = await db.tags.orderBy('order').toArray()
+    const byName = new Map(tags.map((t) => [t.name.toLowerCase(), t.id]))
+    let order = (tags.at(-1)?.order ?? -1) + 1
+    const created: Tag[] = []
+    const tagId = (name: string) => {
+      const existing = byName.get(name.toLowerCase())
+      if (existing) return existing
+      const tag: Tag = { id: newId(), name, order: order++ }
+      byName.set(name.toLowerCase(), tag.id)
+      created.push(tag)
+      return tag.id
+    }
+    const data = buildSampleData(now, newId, tagId)
+    await db.tags.bulkAdd(created)
+    await db.sessions.bulkAdd(data.sessions)
+    await db.hands.bulkAdd(data.hands)
+    return { sessions: data.sessions.length, hands: data.hands.length }
+  })
+}
+
+export async function removeSampleData(): Promise<void> {
+  await db.transaction('rw', db.sessions, db.hands, async () => {
+    await db.hands.filter((h) => !!h.sample).delete()
+    await db.sessions.filter((s) => !!s.sample).delete()
+  })
+}
+
+export async function hasSampleData(): Promise<boolean> {
+  return (await db.hands.filter((h) => !!h.sample).count()) > 0
 }
 
 // ── everything ───────────────────────────────────────────

@@ -1,5 +1,7 @@
 import { createHashRouter } from 'react-router'
 import { QuickCapture } from '../features/capture/QuickCapture'
+import { HandsPage } from '../features/hands/HandsPage'
+import { HandEditor } from '../features/review/HandEditor'
 import { MorePage } from '../features/more/MorePage'
 import { SessionDetail } from '../features/session/SessionDetail'
 import { SessionHome } from '../features/session/SessionHome'
@@ -15,8 +17,8 @@ export const router = createHashRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <SessionHome /> },
-      { path: 'hands', element: <Placeholder title="Hands" /> },
-      { path: 'hands/:id', element: <Placeholder title="Hand review" /> },
+      { path: 'hands', element: <HandsPage /> },
+      { path: 'hands/:id', element: <HandEditor /> },
       { path: 'sessions', element: <SessionList /> },
       { path: 'sessions/:id', element: <SessionDetail /> },
       { path: 'stats', element: <Placeholder title="Stats" /> },

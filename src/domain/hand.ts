@@ -116,9 +116,14 @@ export function heroPlayer(h: Hand): Player | undefined {
   return h.players.find((p) => p.isHero)
 }
 
+/** Positions that did something other than fold (the players worth tracking stacks and reads for). */
+export function involvedPositions(h: Pick<Hand, 'actions'>): Set<Position> {
+  return new Set(h.actions.filter((a) => a.type !== 'fold').map((a) => a.position))
+}
+
 /**
  * Ensure the players list has an entry for the hero at `heroPosition` and for every position
- * that appears in the action list. Existing entries (and their stacks/notes) are kept.
+ * that took part in the hand (anything but a fold). Existing entries (and their stacks/notes) are kept.
  */
 export function syncPlayers(h: Hand, defaultStack: number | null): Player[] {
   const out = h.players
@@ -127,7 +132,7 @@ export function syncPlayers(h: Hand, defaultStack: number | null): Player[] {
   const have = new Set(out.map((p) => p.position))
   const want: Position[] = []
   if (h.heroPosition) want.push(h.heroPosition)
-  for (const a of h.actions) want.push(a.position)
+  want.push(...involvedPositions(h))
   for (const pos of want) {
     if (have.has(pos)) continue
     have.add(pos)
