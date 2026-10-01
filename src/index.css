@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+
+/* Dark is the default theme; <html data-theme="light"> switches it. */
+@custom-variant light (&:where([data-theme='light'], [data-theme='light'] *));
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0f0e;
+  --surface: #141a18;
+  --surface-2: #1c2421;
+  --surface-3: #26302c;
+  --line: #2c3833;
+  --fg: #e7eeeb;
+  --muted: #8d9c96;
+  --faint: #5d6b66;
+  --accent: #2fbf86;
+  --accent-fg: #04140d;
+  --accent-soft: #143528;
+  --win: #43d199;
+  --loss: #f2777a;
+  --warn: #f0b85a;
+  --suit-s: #e7eeeb;
+  --suit-h: #ff6b6b;
+  --suit-d: #5aa9ff;
+  --suit-c: #4fd08f;
+  --card-bg: #222b28;
+  --felt: #12352a;
+  --felt-rim: #0a221b;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --surface-2: #eef1f0;
+  --surface-3: #e1e6e4;
+  --line: #d5dcd9;
+  --fg: #111816;
+  --muted: #5b6a64;
+  --faint: #8f9c97;
+  --accent: #138a5c;
+  --accent-fg: #ffffff;
+  --accent-soft: #d5efe4;
+  --win: #0f8a58;
+  --loss: #c8353b;
+  --warn: #a8670b;
+  --suit-s: #111816;
+  --suit-h: #d42d36;
+  --suit-d: #1c63c7;
+  --suit-c: #138a4f;
+  --card-bg: #ffffff;
+  --felt: #1d6b4f;
+  --felt-rim: #144c38;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-win: var(--win);
+  --color-loss: var(--loss);
+  --color-warn: var(--warn);
+  --color-suit-s: var(--suit-s);
+  --color-suit-h: var(--suit-h);
+  --color-suit-d: var(--suit-d);
+  --color-suit-c: var(--suit-c);
+  --color-card: var(--card-bg);
+  --color-felt: var(--felt);
+  --color-felt-rim: var(--felt-rim);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Numbers line up in lists and keypads. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* No double-tap zoom delay on buttons; no text selection while tapping fast. */
+button,
+[role='button'] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
