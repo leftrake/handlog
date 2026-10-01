@@ -12,14 +12,19 @@ import { handClassOf, unavailableCards } from '../../domain/cards'
 import { formatBB, formatHandAmount, formatNumber, formatTime } from '../../domain/format'
 import { round2 } from '../../domain/money'
 import { isSeated, positionLabel, positionsFor, tableSizeLabel } from '../../domain/positions'
-import type { Card, Hand, TableSize, WentTo } from '../../domain/types'
+import type { Action, Card, Hand, Street, TableSize, WentTo } from '../../domain/types'
 import { PlayerStepper } from '../../components/TableSize'
 import { updateSession } from '../../db/repo'
 import { useLocalPref } from '../../lib/hooks'
 import { applyPadKey } from '../../lib/padInput'
+import { replayHand, setupFromHand } from '../../domain/engine'
+import { involvedPositions, syncPlayers } from '../../domain/hand'
+import { actionLog } from '../../domain/sizing'
+import { amountUnit } from '../review/amountUnit'
+import { ActionPanel } from './ActionPanel'
 import { useAutosave } from './useAutosave'
 
-type Focus = 'hole' | 'position' | 'wentTo' | 'result' | 'board' | 'extras'
+type Focus = 'hole' | 'position' | 'wentTo' | 'result' | 'board' | 'action' | 'extras'
 type HoleMode = 'exact' | 'class'
 
 const PANEL_TITLE: Record<Focus, string> = {
@@ -28,6 +33,7 @@ const PANEL_TITLE: Record<Focus, string> = {
   wentTo: 'How far did it go?',
   result: 'Result',
   board: 'Board',
+  action: 'Action & bet sizes',
   extras: 'Tags & note',
 }
 
@@ -38,6 +44,8 @@ const WENT_OPTIONS: { value: WentTo; label: string }[] = [
   { value: 'river', label: 'River' },
   { value: 'showdown', label: 'Showdown' },
 ]
+
+const STREET_SHORT: Record<Street, string> = { preflop: 'Pre', flop: 'Flop', turn: 'Turn', river: 'River' }
 
 /** Position buttons per row, so every table size fills neat rows of big targets. */
 const POSITION_COLS: Record<TableSize, string> = {
@@ -87,6 +95,8 @@ export function QuickCapture() {
   const [nudge, setNudge] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [newTag, setNewTag] = useState<string | null>(null)
+  // How many actions each "add" appended (auto-filled folds included), so Undo removes the whole step.
+  const [actionGroups, setActionGroups] = useState<number[]>([])
   const session = useSession(hand?.sessionId ?? undefined)
   const autosave = useAutosave(hand)
   const { track } = autosave
@@ -103,6 +113,7 @@ export function QuickCapture() {
       setAmountText(h.result === null ? '' : String(Math.abs(h.result)))
       setNudge(false)
       setNewTag(null)
+      setActionGroups([])
       setFocus(firstMissing(h) ?? 'extras')
     },
     [track, setHoleMode],
@@ -246,6 +257,31 @@ export function QuickCapture() {
 
   const next = () => setFocus(firstMissing(hand) ?? 'extras')
 
+  // ── action & bet sizes ──
+  const entryUnit = amountUnit(hand, settings.displayUnit, settings.currencySymbol)
+  const log = actionLog(hand, replayHand(setupFromHand(hand)), entryUnit.format)
+  const actionsPatch = (actions: Action[]) => {
+    const involved = involvedPositions({ actions })
+    // Keep players with anything recorded about them; drop empty entries left behind by an undo.
+    const players = syncPlayers({ ...hand, actions }, null).filter(
+      (p) => p.isHero || involved.has(p.position) || p.stack !== null || p.description || p.reads || p.shown,
+    )
+    return { actions, players }
+  }
+  const addActions = (added: Action[]) => {
+    commit({ ...actionsPatch([...hand.actions, ...added]), wentTo: hand.wentTo ?? added.at(-1)!.street })
+    setActionGroups((g) => [...g, added.length])
+  }
+  const undoAction = () => {
+    const n = actionGroups.at(-1) ?? 1
+    commit(actionsPatch(hand.actions.slice(0, -n)))
+    setActionGroups((g) => g.slice(0, -1))
+  }
+  const showBoard = () => {
+    setBoardSlot(Math.min(hand.board.length, 4))
+    setFocus('board')
+  }
+
   /** Players came or went: applies to this hand and, for a new hand in a live session, the ones after it. */
   const changeTableSize = (tableSize: TableSize) => {
     commit({
@@ -353,6 +389,9 @@ export function QuickCapture() {
         </div>
       )
       break
+    case 'action':
+      panel = <ActionPanel hand={hand} unit={entryUnit} onAdd={addActions} onUndo={undoAction} onShowBoard={showBoard} />
+      break
     case 'extras':
       panel = (
         <div className="space-y-3">
@@ -393,10 +432,10 @@ export function QuickCapture() {
             <div className="flex-1">
               <Switch checked={hand.flagged} onChange={(flagged) => commit({ flagged })} label="Review this" />
             </div>
-            <Button size="sm" icon="plus" onClick={() => {
-              setBoardSlot(Math.min(hand.board.length, 4))
-              setFocus('board')
-            }}>
+            <Button size="sm" icon="plus" onClick={() => setFocus('action')}>
+              Action
+            </Button>
+            <Button size="sm" icon="plus" onClick={showBoard}>
               Board
             </Button>
           </div>
@@ -509,6 +548,28 @@ export function QuickCapture() {
               {hand.result !== null ? formatHandAmount(hand, hand.result, settings, { signed: true }) : nudge ? '?' : null}
             </SummaryChip>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setFocus('action')}
+            className={cx(
+              'flex w-full items-start gap-2 rounded-xl border px-3 py-2 text-left text-sm',
+              focus === 'action' ? 'border-accent bg-accent-soft/40' : 'border-line bg-surface',
+            )}
+          >
+            <Icon name="chip" size={16} className="mt-0.5 shrink-0 text-muted" />
+            <span className="num line-clamp-3 min-w-0 flex-1">
+              {log.length > 0 ? (
+                log.map((l) => (
+                  <span key={l.street} className="mr-2">
+                    <b className="font-semibold">{STREET_SHORT[l.street]}</b> {l.items.join(', ')}
+                  </span>
+                ))
+              ) : (
+                <span className="text-faint">Action & bet sizes (optional)</span>
+              )}
+            </span>
+          </button>
 
           <button
             type="button"

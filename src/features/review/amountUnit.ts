@@ -28,10 +28,3 @@ export function amountUnit(hand: Pick<Hand, 'unit' | 'bb'>, preferred: EntryUnit
       unit === 'bb' ? formatBB(inBB ? v / hand.bb : v, { signed }) : formatMoney(v, currency, { signed }),
   }
 }
-
-/** Round a suggested bet size to something you'd actually put out. */
-export function niceSize(amount: number, hand: Pick<Hand, 'unit' | 'bb'>): number {
-  if (hand.unit === 'bb') return Math.round(amount * 10) / 10
-  if (hand.bb >= 1) return Math.round(amount)
-  return round2(amount)
-}

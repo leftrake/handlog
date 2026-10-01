@@ -6,25 +6,22 @@ import {
   isRunout,
   legalActions,
   nextActor,
-  seatIn,
   skippedActions,
   stateForStreet,
   type Replay,
   type Step,
   type StreetSummary,
-  type TableState,
 } from '../../domain/engine'
 import { formatPercent } from '../../domain/format'
 import { potOdds } from '../../domain/odds'
 import { positionLabel } from '../../domain/positions'
+import { minBetTo, needsAmount, quickSizes } from '../../domain/sizing'
 import { ACTION_TYPES, STREETS, type Action, type ActionType, type Card, type Hand, type Position, type Street } from '../../domain/types'
 import { cx } from '../../lib/cx'
 import { newId } from '../../lib/id'
-import { niceSize, type AmountUnit } from './amountUnit'
+import type { AmountUnit } from './amountUnit'
 import { IssueLine } from './IssueList'
 import { ACTION_LABEL, boardFor, STREET_LABEL } from './labels'
-
-const needsAmount = (t: ActionType) => t === 'bet' || t === 'raise'
 
 /** A real decision against a bet: more than just the blinds/straddle preflop. */
 function facingBet(step: Step, hand: Hand): boolean {
@@ -82,7 +79,7 @@ function ActionRow({
   const isHero = action.position === hand.heroPosition
   const [showThought, setShowThought] = useState(!!action.thought)
   const odds = isHero && facingBet(step, hand) ? potOdds(step.before.pot, step.toCall) : null
-  const showAmount = needsAmount(action.type) || (action.type === 'allin' && seatIn(step.before, action.position)?.stack === null)
+  const showAmount = needsAmount(action.type, step.before, action.position)
 
   return (
     <li className="py-1.5">
@@ -148,29 +145,6 @@ function ActionRow({
   )
 }
 
-function quickSizes(state: TableState, position: Position, type: ActionType, hand: Hand): { label: string; to: number }[] {
-  const seat = seatIn(state, position)
-  if (!seat) return []
-  const toCall = Math.max(0, state.currentBet - seat.committed)
-  if (type === 'bet') {
-    return [
-      { label: '⅓', f: 1 / 3 },
-      { label: '½', f: 1 / 2 },
-      { label: '⅔', f: 2 / 3 },
-      { label: '¾', f: 3 / 4 },
-      { label: 'Pot', f: 1 },
-    ].map(({ label, f }) => ({ label, to: niceSize(state.pot * f, hand) }))
-  }
-  if (type === 'raise') {
-    const potRaise = state.currentBet + state.pot + toCall
-    return [
-      ...[2.5, 3, 4].map((m) => ({ label: `${m}x`, to: niceSize(state.currentBet * m, hand) })),
-      { label: 'Pot', to: niceSize(potRaise, hand) },
-    ]
-  }
-  return []
-}
-
 function ActionBuilder({ hand, replay, unit, onAdd }: { hand: Hand; replay: Replay; unit: AmountUnit; onAdd: (actions: Action[]) => void }) {
   const next = nextActor(replay, hand)
   const lastStreet = hand.actions.at(-1)?.street ?? 'preflop'
@@ -203,7 +177,7 @@ function ActionBuilder({ hand, replay, unit, onAdd }: { hand: Hand; replay: Repl
   const firstStreet = STREETS.indexOf(next.street)
   const streetOptions = STREETS.filter((_, i) => i >= firstStreet)
   const seats = state.seats.filter((s) => !s.folded && !s.allIn)
-  const needs = type !== null && (needsAmount(type) || (type === 'allin' && seatIn(state, position!)?.stack === null))
+  const needs = type !== null && position !== null && needsAmount(type, state, position)
   const canAdd = position !== null && type !== null && (!needs || (amount !== null && amount > 0))
   const sizes = position && type ? quickSizes(state, position, type, hand) : []
 
@@ -289,7 +263,10 @@ function ActionBuilder({ hand, replay, unit, onAdd }: { hand: Hand; replay: Repl
               ))}
             </div>
           )}
-          <p className="text-xs text-faint">Amounts are the total for the street ("raise to"), not the increase.</p>
+          <p className="text-xs text-faint">
+            Amounts are the total for the street ("raise to"), not the increase. Minimum{' '}
+            {unit.format(minBetTo(state, hand.bb))}.
+          </p>
         </div>
       )}
       <Button variant="primary" block icon="plus" disabled={!canAdd} onClick={add}>
