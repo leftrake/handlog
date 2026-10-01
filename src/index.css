@@ -27,6 +27,35 @@
   --card-bg: #222b28;
   --felt: #12352a;
   --felt-rim: #0a221b;
+  /* Charts (validated with the dataviz palette checks against --surface) */
+  --viz-1: #3987e5;
+  --viz-neg: #e66767;
+  --viz-grid: #232c29;
+  --viz-axis: #3a4641;
+  --heat-c1: #184f95;
+  --heat-c2: #256abf;
+  --heat-c3: #3987e5;
+  --heat-c4: #6da7ec;
+  --heat-c5: #9ec5f4;
+  --heat-c-ink-1: #ffffff;
+  --heat-c-ink-2: #ffffff;
+  --heat-c-ink-3: #0b0b0b;
+  --heat-c-ink-4: #0b0b0b;
+  --heat-c-ink-5: #0b0b0b;
+  --heat-mid: #383835;
+  --heat-mid-ink: #ffffff;
+  --heat-p1: #256abf;
+  --heat-p2: #3987e5;
+  --heat-p3: #86b6ef;
+  --heat-p-ink-1: #ffffff;
+  --heat-p-ink-2: #0b0b0b;
+  --heat-p-ink-3: #0b0b0b;
+  --heat-n1: #b53a3e;
+  --heat-n2: #d55859;
+  --heat-n3: #fe8c8a;
+  --heat-n-ink-1: #ffffff;
+  --heat-n-ink-2: #0b0b0b;
+  --heat-n-ink-3: #0b0b0b;
 }
 
 [data-theme='light'] {
@@ -52,6 +81,34 @@
   --card-bg: #ffffff;
   --felt: #1d6b4f;
   --felt-rim: #144c38;
+  --viz-1: #2a78d6;
+  --viz-neg: #e34948;
+  --viz-grid: #e8ebea;
+  --viz-axis: #c3c9c6;
+  --heat-c1: #86b6ef;
+  --heat-c2: #5598e7;
+  --heat-c3: #2a78d6;
+  --heat-c4: #1c5cab;
+  --heat-c5: #104281;
+  --heat-c-ink-1: #0b0b0b;
+  --heat-c-ink-2: #0b0b0b;
+  --heat-c-ink-3: #0b0b0b;
+  --heat-c-ink-4: #ffffff;
+  --heat-c-ink-5: #ffffff;
+  --heat-mid: #f0efec;
+  --heat-mid-ink: #0b0b0b;
+  --heat-p1: #86b6ef;
+  --heat-p2: #2a78d6;
+  --heat-p3: #104281;
+  --heat-p-ink-1: #0b0b0b;
+  --heat-p-ink-2: #0b0b0b;
+  --heat-p-ink-3: #ffffff;
+  --heat-n1: #fd8e86;
+  --heat-n2: #d2383a;
+  --heat-n3: #830011;
+  --heat-n-ink-1: #0b0b0b;
+  --heat-n-ink-2: #ffffff;
+  --heat-n-ink-3: #ffffff;
 }
 
 @theme inline {

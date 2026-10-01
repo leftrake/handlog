@@ -8,12 +8,3 @@ export function NotFound() {
     </>
   )
 }
-
-export function Placeholder({ title }: { title: string }) {
-  return (
-    <>
-      <PageHeader title={title} />
-      <EmptyState title={title}>Coming in a later build phase.</EmptyState>
-    </>
-  )
-}

@@ -9,8 +9,9 @@ import { SessionDetail } from '../features/session/SessionDetail'
 import { SessionHome } from '../features/session/SessionHome'
 import { SessionList } from '../features/session/SessionList'
 import { SettingsPage } from '../features/settings/SettingsPage'
+import { LazyStatsPage } from '../features/stats/LazyStatsPage'
 import { AppShell } from './AppShell'
-import { NotFound, Placeholder } from './fallbacks'
+import { NotFound } from './fallbacks'
 
 // Hash routing: deep links work on GitHub Pages and from the offline cache without server rewrites.
 export const router = createHashRouter([
@@ -24,7 +25,7 @@ export const router = createHashRouter([
       { path: 'hands/:id/replay', element: <Replayer /> },
       { path: 'sessions', element: <SessionList /> },
       { path: 'sessions/:id', element: <SessionDetail /> },
-      { path: 'stats', element: <Placeholder title="Stats" /> },
+      { path: 'stats', element: <LazyStatsPage /> },
       { path: 'odds', element: <OddsHelper /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'more', element: <MorePage /> },

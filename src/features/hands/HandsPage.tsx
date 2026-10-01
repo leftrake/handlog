@@ -32,7 +32,14 @@ export function HandsPage() {
   const tags = useTags()
   const sessions = useSessions()
   const settings = useSettings()
-  const [filter, setFilter] = useLocalPref<HandFilter>('handlog.handFilter', {})
+  const [savedFilter, setSavedFilter] = useLocalPref<HandFilter>('handlog.handFilter', {})
+  // A deep link like /hands?hand=AKs (from the stats grid) shows just that starting hand.
+  const handParam = params.get('hand')
+  const filter = useMemo<HandFilter>(() => (handParam ? { handQuery: handParam } : savedFilter), [handParam, savedFilter])
+  const setFilter = (f: HandFilter) => {
+    setSavedFilter(f)
+    if (handParam) setParams({}, { replace: true })
+  }
   const [sheet, setSheet] = useState(false)
 
   const tagMap = useMemo(() => new Map((tags ?? []).map((t) => [t.id, t])), [tags])
