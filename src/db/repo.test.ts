@@ -9,6 +9,8 @@ import {
   deleteTag,
   draftHand,
   endSession,
+  exportBackup,
+  importBackup,
   getActiveSession,
   getSettings,
   loadSampleData,
@@ -105,7 +107,7 @@ describe('tags', () => {
 
   it('removes a deleted tag from every hand', async () => {
     const tag = await addTag('Temp')
-    const keep = (await db.tags.toArray())[0]
+    const keep = (await db.tags.toArray()).find((t) => t.id !== tag.id)!
     const h = await draftHand()
     h.tagIds = [tag.id, keep.id]
     await saveHand(h)
@@ -144,5 +146,29 @@ describe('sample data', () => {
     expect(await db.hands.count()).toBe(1)
     expect(await db.hands.get(mine.id)).toBeDefined()
     expect(await db.sessions.count()).toBe(0)
+  })
+})
+
+describe('backup and restore', () => {
+  it('exports, survives a wipe, and re-imports without duplicates', async () => {
+    await loadSampleData()
+    const s = await startSession(cash)
+    const mine = await saveHand({ ...(await draftHand()), note: 'my own hand' })
+    const backup = await exportBackup(5000)
+    expect((await getSettings()).lastBackupAt).toBe(5000)
+    const total = await db.hands.count()
+
+    await clearAllData()
+    const restored = await importBackup(backup)
+    expect(restored.hands.added).toBe(total)
+    expect(await db.hands.count()).toBe(total)
+    expect((await db.hands.get(mine.id))?.note).toBe('my own hand')
+    // Fresh device: settings come back, including the still-active session.
+    expect((await getSettings()).activeSessionId).toBe(s.id)
+
+    const again = await importBackup(backup)
+    expect(again.hands).toEqual({ added: 0, updated: 0, unchanged: total })
+    expect(await db.hands.count()).toBe(total)
+    expect((await db.tags.toArray()).filter((t) => t.name === 'Bluff')).toHaveLength(1)
   })
 })

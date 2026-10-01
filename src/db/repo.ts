@@ -1,5 +1,6 @@
 // Data access for sessions, hands, tags and settings. UI code calls these; never Dexie directly.
 import { createHand, handContextFromSession, handContextFromSettings, type HandContext } from '../domain/hand'
+import { buildBackup, planMerge, type Backup, type MergePlan } from '../domain/backup'
 import { buildSampleData } from '../domain/sampleData'
 import { createSession, sessionDefaultsFrom } from '../domain/session'
 import {
@@ -230,6 +231,47 @@ export async function removeSampleData(): Promise<void> {
 
 export async function hasSampleData(): Promise<boolean> {
   return (await db.hands.filter((h) => !!h.sample).count()) > 0
+}
+
+// ── backup ───────────────────────────────────────────────
+
+/** Snapshot everything as a backup and record the time it was taken. */
+export async function exportBackup(now = Date.now()): Promise<Backup> {
+  const [sessions, hands, tags, settings] = await Promise.all([
+    db.sessions.toArray(),
+    db.hands.toArray(),
+    db.tags.orderBy('order').toArray(),
+    getSettings(),
+  ])
+  await updateSettings({ lastBackupAt: now })
+  return buildBackup({ sessions, hands, tags, settings: { ...settings, lastBackupAt: now } }, now)
+}
+
+/** What importing `backup` would do to the current data (nothing is written). */
+export async function previewImport(backup: Backup): Promise<MergePlan> {
+  const [sessions, hands, tags] = await Promise.all([db.sessions.toArray(), db.hands.toArray(), db.tags.toArray()])
+  return planMerge({ sessions, hands, tags }, backup)
+}
+
+/**
+ * Merge a backup into the current data: nothing is deleted, matching records keep the newer copy.
+ * On an empty device the backup's settings are restored too; otherwise local settings are kept.
+ */
+export async function importBackup(backup: Backup): Promise<MergePlan['counts']> {
+  return db.transaction('rw', db.sessions, db.hands, db.tags, db.meta, async () => {
+    const [sessions, hands, tags] = await Promise.all([db.sessions.toArray(), db.hands.toArray(), db.tags.toArray()])
+    const freshDevice = sessions.length === 0 && hands.length === 0
+    const plan = planMerge({ sessions, hands, tags }, backup)
+    await db.tags.bulkPut(plan.tags)
+    await db.sessions.bulkPut(plan.sessions)
+    await db.hands.bulkPut(plan.hands)
+    if (freshDevice && backup.settings) {
+      const imported = normalizeSettings(backup.settings)
+      const active = imported.activeSessionId ? await db.sessions.get(imported.activeSessionId) : undefined
+      await updateSettings({ ...imported, activeSessionId: active && active.endedAt === null ? active.id : null })
+    }
+    return plan.counts
+  })
 }
 
 // ── everything ───────────────────────────────────────────

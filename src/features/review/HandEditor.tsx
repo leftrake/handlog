@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Icon } from '../../components/icons'
 import { PlayingCard } from '../../components/PlayingCard'
 import { Banner, Button, ConfirmButton, EmptyState, IconButton, Page, PageHeader, Panel, Section, Segmented, Switch, TextArea } from '../../components/ui'
 import { useSession, useSettings, useTags } from '../../db/hooks'
+import { analysisText } from '../../domain/analysisText'
 import { replayHand, setupFromHand } from '../../domain/engine'
 import { formatDateTime, formatNumber, formatTime } from '../../domain/format'
 import { syncPlayers } from '../../domain/hand'
@@ -11,6 +12,7 @@ import { positionLabel } from '../../domain/positions'
 import { blindLevelLabel } from '../../domain/session'
 import type { Action, Hand, Player, ReviewStatus } from '../../domain/types'
 import { countBySeverity, validateHand } from '../../domain/validation'
+import { copyText } from '../../lib/files'
 import { useLocalPref } from '../../lib/hooks'
 import { HoleView, ResultText } from '../hands/HandRow'
 import { ActionEditor } from './ActionEditor'
@@ -38,6 +40,13 @@ export function HandEditor() {
   const session = useSession(hand?.sessionId ?? undefined)
   const [entryUnit, setEntryUnit] = useLocalPref<EntryUnit>('handlog.entryUnit', 'money')
 
+  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null)
+  useEffect(() => {
+    if (!copied) return
+    const t = setTimeout(() => setCopied(null), 2500)
+    return () => clearTimeout(t)
+  }, [copied])
+
   const replay = useMemo(() => (hand ? replayHand(setupFromHand(hand)) : null), [hand])
   const issues = useMemo(() => (hand && replay ? validateHand(hand, replay) : []), [hand, replay])
 
@@ -59,6 +68,14 @@ export function HandEditor() {
   const setActions = (actions: Action[]) =>
     update((h) => ({ actions, players: syncPlayers({ ...h, actions }, null) }))
   const setPlayers = (players: Player[]) => update({ players })
+  const copyForAnalysis = async () => {
+    const text = analysisText(hand, {
+      tags: new Map(tags.map((t) => [t.id, t])),
+      session,
+      currencySymbol: settings.currencySymbol,
+    })
+    setCopied((await copyText(text)) ? 'ok' : 'fail')
+  }
 
   const title = [hand.heroPosition ? positionLabel(hand.heroPosition) : null, hand.hole?.kind === 'class' ? hand.hole.handClass : null]
     .filter(Boolean)
@@ -78,6 +95,7 @@ export function HandEditor() {
         back
         actions={
           <>
+            <IconButton icon="copy" label="Copy for analysis" onClick={copyForAnalysis} />
             <IconButton icon="pencil" label="Edit quick details" onClick={() => navigate(`/capture/${hand.id}`)} />
             <IconButton icon="play" label="Replay hand" onClick={() => navigate(`/hands/${hand.id}/replay`)} />
           </>
@@ -204,6 +222,9 @@ export function HandEditor() {
 
             <Section>
               <div className="flex flex-col gap-2 sm:flex-row">
+                <Button block variant="primary" icon="copy" onClick={copyForAnalysis}>
+                  Copy for analysis
+                </Button>
                 <Button block icon="play" onClick={() => navigate(`/hands/${hand.id}/replay`)}>
                   Replay hand
                 </Button>
@@ -223,6 +244,13 @@ export function HandEditor() {
             </Section>
           </div>
         </div>
+        {copied && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(96px+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 md:bottom-8">
+            <div className="rounded-full bg-surface-3 px-4 py-2 text-sm font-medium shadow-lg" role="status">
+              {copied === 'ok' ? 'Copied. Paste it into Claude or a forum post.' : "Couldn't copy on this browser."}
+            </div>
+          </div>
+        )}
         {hand.unit === 'bb' && <p className="mt-2 text-center text-xs text-faint">Tournament hand: amounts are in big blinds.</p>}
       </Page>
     </>

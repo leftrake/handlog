@@ -5,6 +5,7 @@ import { useSettings } from '../../db/hooks'
 import { db } from '../../db/db'
 import { clearAllData, loadSampleData, removeSampleData, updateSettings } from '../../db/repo'
 import type { DisplayUnit, TableSize, Theme } from '../../domain/types'
+import { BackupPanel } from './BackupPanel'
 import { TagManager } from './TagManager'
 
 const CONFIRM_WORD = 'DELETE'
@@ -82,6 +83,10 @@ export function SettingsPage() {
     <>
       <PageHeader title="Settings" back="/more" />
       <Page>
+        <Section title="Backup & restore">
+          <BackupPanel settings={settings} />
+        </Section>
+
         <Section title="Defaults">
           <Panel className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
