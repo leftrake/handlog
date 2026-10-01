@@ -7,7 +7,7 @@ import { formatHole } from '../../domain/cards'
 import { replayHand, setupFromHand } from '../../domain/engine'
 import { formatPercent } from '../../domain/format'
 import { buildFrames } from '../../domain/frames'
-import { positionLabel } from '../../domain/positions'
+import { positionLabel, tableSizeLabel } from '../../domain/positions'
 import { STREETS, type Street } from '../../domain/types'
 import { cx } from '../../lib/cx'
 import { amountUnit } from '../review/amountUnit'
@@ -63,7 +63,7 @@ export function Replayer() {
     <div className="flex min-h-[calc(100dvh-76px)] flex-col md:min-h-dvh">
       <PageHeader
         title="Replay"
-        subtitle={[hand.heroPosition ? positionLabel(hand.heroPosition) : null, formatHole(hand.hole)].filter(Boolean).join(' · ')}
+        subtitle={[hand.heroPosition ? positionLabel(hand.heroPosition, hand.tableSize) : null, formatHole(hand.hole), tableSizeLabel(hand.tableSize)].filter(Boolean).join(' · ')}
         back
       />
       <Page className="flex-1 space-y-3 pt-2">

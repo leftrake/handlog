@@ -1,7 +1,7 @@
 import { Button, Chip, Field, Segmented, Sheet, Switch, TextInput } from '../../components/ui'
 import { formatDate, toDateInput } from '../../domain/format'
 import type { HandFilter, Outcome } from '../../domain/filters'
-import { positionLabel, positionsFor } from '../../domain/positions'
+import { ALL_POSITIONS, positionLabel } from '../../domain/positions'
 import { stakesLabel } from '../../domain/session'
 import { REVIEW_STATUSES, WENT_TO, type Position, type Session, type Tag, type WentTo } from '../../domain/types'
 import { REVIEW_LABEL } from '../review/labels'
@@ -91,7 +91,7 @@ export function FilterSheet({
         <div>
           <div className="mb-1 text-[13px] font-medium text-muted">Position</div>
           <div className="flex flex-wrap gap-1.5">
-            {positionsFor(9).map((p: Position) => (
+            {ALL_POSITIONS.map((p: Position) => (
               <Chip key={p} active={filter.positions?.includes(p)} onClick={() => set({ positions: toggle(filter.positions, p) })}>
                 {positionLabel(p)}
               </Chip>

@@ -8,7 +8,7 @@ import { analysisText } from '../../domain/analysisText'
 import { replayHand, setupFromHand } from '../../domain/engine'
 import { formatDateTime, formatNumber, formatTime } from '../../domain/format'
 import { syncPlayers } from '../../domain/hand'
-import { positionLabel } from '../../domain/positions'
+import { positionLabel, tableSizeLabel } from '../../domain/positions'
 import { blindLevelLabel } from '../../domain/session'
 import type { Action, Hand, Player, ReviewStatus } from '../../domain/types'
 import { countBySeverity, validateHand } from '../../domain/validation'
@@ -77,7 +77,7 @@ export function HandEditor() {
     setCopied((await copyText(text)) ? 'ok' : 'fail')
   }
 
-  const title = [hand.heroPosition ? positionLabel(hand.heroPosition) : null, hand.hole?.kind === 'class' ? hand.hole.handClass : null]
+  const title = [hand.heroPosition ? positionLabel(hand.heroPosition, hand.tableSize) : null, hand.hole?.kind === 'class' ? hand.hole.handClass : null]
     .filter(Boolean)
     .join(' · ')
 
@@ -87,7 +87,7 @@ export function HandEditor() {
         title={title || 'Hand review'}
         subtitle={
           <>
-            {formatDateTime(hand.createdAt)} · {stakesText(hand)}
+            {formatDateTime(hand.createdAt)} · {stakesText(hand)} · {tableSizeLabel(hand.tableSize)}
             {session?.location ? ` · ${session.location}` : ''}
             {savedAt ? ` · saved ${formatTime(savedAt)}` : ''}
           </>

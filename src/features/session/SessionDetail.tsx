@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { TableSizePicker } from '../../components/TableSize'
 import { Banner, Button, ConfirmButton, EmptyState, Field, IconButton, NumberInput, Page, PageHeader, Panel, Section, Segmented, TextInput } from '../../components/ui'
 import { useActiveSession, useSession, useSessionHands, useSettings, useTags } from '../../db/hooks'
 import { deleteSession, removeRebuy, resumeSession, updateSession } from '../../db/repo'
@@ -101,15 +102,8 @@ export function SessionDetail() {
             {isTourney && session.tournament && (
               <p className="text-sm text-muted">Current level: {blindLevelLabel(session.tournament.level)}</p>
             )}
-            <Field label="Table size">
-              <Segmented
-                value={session.tableSize}
-                onChange={(tableSize) => save({ tableSize })}
-                options={[
-                  { value: 9, label: '9-handed' },
-                  { value: 6, label: '6-handed' },
-                ]}
-              />
+            <Field label="Players at the table" hint="Used for new hands. Each logged hand keeps its own table size.">
+              <TableSizePicker value={session.tableSize} onChange={(tableSize) => save({ tableSize })} />
             </Field>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Started">

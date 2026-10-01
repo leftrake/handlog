@@ -7,7 +7,7 @@ Everything stays on your device: no accounts, no backend. It installs to your ph
 ## Features
 
 - **Quick Capture** (one tap from anywhere): hole cards via rank + suit pads or shorthand (`AKs`), position, how far the hand went, result on a number pad, optional board, one-tap tags, a note, and a "Review this" flag. Saves automatically as you go and never lets the same card be used twice.
-- **Sessions**: cash or tournament, stakes / blind levels, table size, location, buy-in, rebuys, cash-out, notes. New sessions start from your last values; hands attach to the active session automatically. Tournament hands record stacks and results in big blinds.
+- **Sessions**: cash or tournament, stakes / blind levels, players at the table (heads-up to 10-handed, adjustable mid-session as people come and go), location, buy-in, rebuys, cash-out, notes. New sessions start from your last values; hands attach to the active session automatically. Tournament hands record stacks and results in big blinds.
 - **Full Review editor**: street-by-street action with an action builder that knows who acts next, pot after every action, effective stacks and SPR per street, advisory validation (turn order, min-raises, acting after folding, short all-ins), starting stacks, villain descriptions/reads/shown cards, per-decision thoughts, study notes, and review status.
 - **Replayer**: step through a hand on a table graphic, with pot odds (to call, pot after calling, required equity) at each of your decisions.
 - **Study tools**: hand list with search and filters, review queue, stats dashboard (profit over time, $/hour, BB/hour, results by position, 13×13 starting-hand grid), and an odds helper (pot odds, rule of 2 and 4 vs exact outs math, with formulas).
@@ -80,7 +80,7 @@ src/
 ├─ domain/          Pure TypeScript, no React or storage. All poker logic lives here, with tests.
 │  ├─ types.ts         Data model: Session, Hand, Action, Player, Tag, Settings
 │  ├─ cards.ts         Card parsing, hand classes, duplicate detection, 13×13 grid mapping
-│  ├─ positions.ts     Seats and action order for 6- and 9-handed tables
+│  ├─ positions.ts     Seats and action order for every table size, heads-up to 10-handed
 │  ├─ engine.ts        Action replay: pots, stacks, turn order, SPR, validation issues
 │  ├─ validation.ts    Hand-level checks (cards, board vs action, …)
 │  ├─ odds.ts          Pot odds, outs → equity (rule of 2/4 and exact)

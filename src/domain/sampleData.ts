@@ -55,6 +55,8 @@ interface HandSpec {
   question?: string
   /** For tournament hands: blind level when the hand was played. */
   level?: { level: number; sb: number; bb: number; ante?: number }
+  /** Players at the table for this hand, when it differs from the session's starting size. */
+  tableSize?: TableSize
 }
 
 const SESSIONS: SessionSpec[] = [
@@ -125,7 +127,7 @@ const SESSIONS: SessionSpec[] = [
     buyIn: 200,
     rebuys: [{ afterMin: 60, amount: 200 }],
     cashOut: 155,
-    notes: '6-max table. Aggressive regs on my left. Need to tighten up from the CO.',
+    notes: '6-max table. Aggressive regs on my left. Need to tighten up from the CO. Table broke down to 3-handed, then heads-up, at the end.',
   },
 ]
 
@@ -165,6 +167,22 @@ const HANDS: HandSpec[] = [
     question: 'Versus a tight squeezer, is flatting QQ in position better than 4betting?',
   },
   { session: 0, at: 150, hole: '7c6c', pos: 'CO', went: 'flop', result: -15, note: 'Missed flop, gave up', flagged: false },
+  {
+    session: 0,
+    at: 250,
+    tableSize: 8,
+    hole: '8c8h',
+    pos: 'UTG1',
+    board: '9h6c2d',
+    went: 'flop',
+    win: 'villain',
+    tags: ['Tough spot'],
+    note: 'Table 8-handed. C-bet 88 on 9-6-2 and folded to a raise.',
+    stacks: { UTG1: 640, CO: 500 },
+    villains: { CO: { description: 'Loose-aggressive, raises flops light' } },
+    actions: 'p: UTG1 r 12, CO c | f: UTG1 b 15, CO r 45, UTG1 f',
+    question: 'Against a player who raises flops light, is 88 strong enough to call here?',
+  },
   {
     session: 0,
     at: 215,
@@ -377,6 +395,35 @@ const HANDS: HandSpec[] = [
   { session: 4, at: 150, hole: 'KcJc', pos: 'BTN', went: 'turn', result: -46, tags: ['Misplayed'], note: 'Floated the flop with nothing, called a turn raise. Spew.' },
   {
     session: 4,
+    at: 200,
+    tableSize: 3,
+    hole: 'Kh9h',
+    pos: 'SB',
+    board: '9c5d2sJh4c',
+    went: 'showdown',
+    win: 'hero',
+    note: 'Down to 3-handed. 3bet K9s from the SB versus a wide button open; value-bet the river.',
+    status: 'reviewed',
+    stacks: { SB: 180, BTN: 220, BB: 150 },
+    villains: { BTN: { description: 'Opens every button 3-handed', shown: 'Ts9s' } },
+    actions: 'p: BTN r 5, SB r 18, BB f, BTN c | f: SB b 14, BTN c | t: SB x, BTN x | r: SB b 30, BTN c',
+  },
+  {
+    session: 4,
+    at: 205,
+    tableSize: 2,
+    hole: 'Ad7c',
+    pos: 'BB',
+    board: 'Ah8s3dKc',
+    went: 'turn',
+    win: 'hero',
+    tags: ['3bet pot'],
+    note: 'Heads-up at the end of the night. 3bet A7o, two barrels took it down.',
+    stacks: { BB: 160, BTN: 240 },
+    actions: 'p: BTN r 5, BB r 16, BTN c | f: BB b 12, BTN c | t: BB b 35, BTN f',
+  },
+  {
+    session: 4,
     at: 190,
     hole: 'QcQs',
     pos: 'UTG',
@@ -478,7 +525,7 @@ export function buildSampleData(now: number, newId: () => string, tagId: (name: 
       ? {
           sessionId: session.id,
           gameType: 'tournament',
-          tableSize: sSpec.tableSize,
+          tableSize: spec.tableSize ?? sSpec.tableSize,
           unit: 'bb',
           sb: round2(level.sb / level.bb),
           bb: 1,
@@ -488,7 +535,7 @@ export function buildSampleData(now: number, newId: () => string, tagId: (name: 
       : {
           sessionId: session.id,
           gameType: 'cash',
-          tableSize: sSpec.tableSize,
+          tableSize: spec.tableSize ?? sSpec.tableSize,
           unit: 'money',
           sb: sSpec.sb,
           bb: sSpec.bb,

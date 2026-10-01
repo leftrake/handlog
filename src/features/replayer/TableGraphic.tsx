@@ -48,7 +48,7 @@ export function TableGraphic({ hand, frame, unit }: { hand: Hand; frame: Frame; 
         const toAct = s.toAct === pos && frame.kind !== 'end'
         const reveal = frame.reveal && shown.get(pos)
         const seatPos = polar(angle, 44, 43)
-        const betPos = polar(angle, 28, 25)
+        const betPos = polar(angle, 26, 19)
         const cardPos = polar(angle, 33, 30)
         return (
           <div key={pos}>
@@ -63,7 +63,7 @@ export function TableGraphic({ hand, frame, unit }: { hand: Hand; frame: Frame; 
               )}
             >
               <div className="text-[11px] font-bold leading-tight">
-                {positionLabel(pos)}
+                {positionLabel(pos, hand.tableSize)}
                 {pos === 'BTN' && <span className="ml-1 rounded-full bg-white px-1 text-[9px] font-black text-black">D</span>}
               </div>
               <div className="num truncate text-[10px] leading-tight text-muted">

@@ -56,7 +56,7 @@ export function HandRow({
       <HoleView hand={hand} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-[15px] font-semibold">
-          <span>{hand.heroPosition ? positionLabel(hand.heroPosition) : '—'}</span>
+          <span>{hand.heroPosition ? positionLabel(hand.heroPosition, hand.tableSize) : '—'}</span>
           {hand.wentTo && <span className="text-sm font-medium text-muted">{WENT_LABEL[hand.wentTo]}</span>}
           {hand.flagged && hand.reviewStatus === 'unreviewed' && <Icon name="flag" size={14} className="text-warn" />}
           {hand.reviewStatus === 'needs_study' && (

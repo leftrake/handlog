@@ -18,8 +18,11 @@ export type Street = (typeof STREETS)[number]
 export const WENT_TO = ['preflop', 'flop', 'turn', 'river', 'showdown'] as const
 export type WentTo = (typeof WENT_TO)[number]
 
-export type Position = 'UTG' | 'UTG1' | 'MP' | 'LJ' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB'
-export type TableSize = 6 | 9
+export type Position = 'UTG' | 'UTG1' | 'UTG2' | 'MP' | 'LJ' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB'
+
+/** Players dealt in: heads-up (2) through 10-handed. */
+export const TABLE_SIZES = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+export type TableSize = (typeof TABLE_SIZES)[number]
 export type GameType = 'cash' | 'tournament'
 
 /** Unit a hand's amounts are stored in: dollars (cash) or big blinds (tournament). */
@@ -61,6 +64,7 @@ export interface TournamentInfo {
 export interface Session {
   id: string
   gameType: GameType
+  /** Players currently at the table. Changes as people come and go; each hand keeps its own copy. */
   tableSize: TableSize
   location: string
   /** Cash stakes in dollars. For tournaments this mirrors the blind ratio (bb = 1). */

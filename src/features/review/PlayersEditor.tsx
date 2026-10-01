@@ -77,11 +77,11 @@ function PlayerCard({
   return (
     <div className="space-y-2 rounded-xl border border-line bg-surface-2/40 p-3">
       <div className="flex items-center gap-2">
-        <span className="w-14 font-bold">{positionLabel(player.position)}</span>
+        <span className="w-14 font-bold">{positionLabel(player.position, hand.tableSize)}</span>
         {player.isHero && <span className="rounded bg-accent-soft px-1.5 text-xs font-semibold text-accent">You</span>}
         <div className="ml-auto flex items-center gap-1.5">
           <NumberInput
-            aria-label={`${positionLabel(player.position)} starting stack`}
+            aria-label={`${positionLabel(player.position, hand.tableSize)} starting stack`}
             className="h-10 w-28 text-right"
             placeholder="Stack"
             value={player.stack === null ? null : unit.toDisplay(player.stack)}
@@ -151,7 +151,7 @@ export function PlayersEditor({
           <div className="flex flex-wrap gap-1.5">
             {free.map((p) => (
               <Chip key={p} onClick={() => onChange([...hand.players, { position: p, isHero: false, stack: heroStack }])}>
-                + {positionLabel(p)}
+                + {positionLabel(p, hand.tableSize)}
               </Chip>
             ))}
           </div>

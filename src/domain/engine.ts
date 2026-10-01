@@ -2,7 +2,15 @@
 // stacks and SPR per street, and problems with the sequence. Problems are reported, never thrown,
 // so a half-entered or slightly wrong hand still replays as far as it sensibly can.
 import { round2 } from './money'
-import { positionLabel, positionsFor, postflopOrder, preflopOrder, STRADDLE_POSITION } from './positions'
+import {
+  positionLabel,
+  positionsFor,
+  postflopOrder,
+  preflopOrder,
+  smallBlindPosition,
+  straddlePosition,
+  tableSizeLabel,
+} from './positions'
 import { STREETS, type Action, type ActionType, type Player, type Position, type Street, type TableSize } from './types'
 
 export type IssueSeverity = 'error' | 'warning'
@@ -219,32 +227,41 @@ export function initialState(setup: HandSetup): TableState {
   }
   const bbSeat = seatOf(s, 'BB')!
   if (setup.ante) put(s, bbSeat, setup.ante, false)
-  put(s, seatOf(s, 'SB')!, setup.sb)
+  put(s, seatOf(s, smallBlindPosition(setup.tableSize))!, setup.sb)
   put(s, bbSeat, setup.bb)
-  if (setup.straddle) put(s, seatOf(s, STRADDLE_POSITION)!, setup.straddle)
+  const straddler = hasStraddle(setup) ? straddlePosition(setup.tableSize) : null
+  if (straddler && setup.straddle) put(s, seatOf(s, straddler)!, setup.straddle)
   s.currentBet = Math.max(...s.seats.map((x) => x.committed))
-  s.lastRaise = setup.straddle ? setup.straddle : setup.bb
-  refresh(s, setup.tableSize, !!setup.straddle, null)
+  s.lastRaise = straddler && setup.straddle ? setup.straddle : setup.bb
+  refresh(s, setup.tableSize, !!straddler, null)
   return s
+}
+
+/** A straddle needs a seat left of the big blind, so there's none heads-up. */
+function hasStraddle(setup: Pick<HandSetup, 'tableSize' | 'straddle'>): boolean {
+  return !!setup.straddle && straddlePosition(setup.tableSize) !== null
 }
 
 // ── replay ───────────────────────────────────────────────
 
 export function replayHand(setup: HandSetup): Replay {
   const { tableSize: size, bb } = setup
-  const straddle = !!setup.straddle
+  const straddle = hasStraddle(setup)
   const hero = setup.heroPosition
   const initial = initialState(setup)
   const s = cloneState(initial)
   const steps: Step[] = []
   const streets: StreetSummary[] = [summarize(s, hero)]
   const allIssues: Issue[] = []
+  if (setup.straddle && !straddle) {
+    allIssues.push({ severity: 'warning', message: 'There is no straddle heads-up, so it was ignored' })
+  }
 
   setup.actions.forEach((action, index) => {
     const before = cloneState(s)
     const issues: Issue[] = []
     const issue = (severity: IssueSeverity, message: string) => issues.push({ severity, message, actionId: action.id })
-    const who = positionLabel(action.position)
+    const who = positionLabel(action.position, size)
     let toCall = 0
     let chips = 0
 
@@ -268,7 +285,7 @@ export function replayHand(setup: HandSetup): Replay {
         return record()
       }
       if (s.toAct) {
-        issue('warning', `${STREET_LABEL[s.street]} betting wasn't finished: ${positionLabel(s.toAct)} still had to act`)
+        issue('warning', `${STREET_LABEL[s.street]} betting wasn't finished: ${positionLabel(s.toAct, size)} still had to act`)
       }
       while (STREETS.indexOf(s.street) < target) {
         advanceStreet(s, size, bb)
@@ -278,7 +295,7 @@ export function replayHand(setup: HandSetup): Replay {
 
     const seat = seatOf(s, action.position)
     if (!seat) {
-      issue('error', `${who} isn't a seat at a ${size}-handed table`)
+      issue('error', `${who} isn't a seat at a ${tableSizeLabel(size).toLowerCase()} table`)
       return record()
     }
     if (seat.folded) {
@@ -290,7 +307,7 @@ export function replayHand(setup: HandSetup): Replay {
       return record()
     }
     if (s.toAct && s.toAct !== action.position) {
-      issue('error', `Out of turn: ${positionLabel(s.toAct)} acts before ${who}`)
+      issue('error', `Out of turn: ${positionLabel(s.toAct, size)} acts before ${who}`)
     } else if (!s.toAct) {
       issue('error', `${STREET_LABEL[s.street]} betting was already closed when ${who} acted`)
     }
@@ -455,7 +472,7 @@ export function skippedActions(
 ): { position: Position; type: 'fold' | 'check' }[] {
   const out: { position: Position; type: 'fold' | 'check' }[] = []
   if (!state.toAct || state.toAct === target) return out
-  const order = actionOrder(state, setup.tableSize, !!setup.straddle && state.street === 'preflop')
+  const order = actionOrder(state, setup.tableSize, hasStraddle(setup) && state.street === 'preflop')
   const start = order.indexOf(state.toAct)
   for (let i = 0; i < order.length; i++) {
     const pos = order[(start + i) % order.length]

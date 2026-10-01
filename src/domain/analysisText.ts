@@ -3,7 +3,7 @@ import { cardRank, cardSuit } from './cards'
 import { replayHand, setupFromHand, type Step } from './engine'
 import { formatDate, formatNumber } from './format'
 import { round2 } from './money'
-import { positionLabel } from './positions'
+import { positionLabel, tableSizeLabel } from './positions'
 import { STREETS, type Card, type Hand, type Position, type Session, type Street, type Tag } from './types'
 
 export interface AnalysisContext {
@@ -25,7 +25,7 @@ export function analysisText(hand: Hand, ctx: AnalysisContext): string {
   const isBB = hand.unit === 'bb'
   const amt = (v: number) => (isBB ? `${formatNumber(v)} BB` : `${cur}${formatNumber(v)}`)
   const withBB = (v: number) => (isBB ? amt(v) : `${amt(v)} (${formatNumber(round2(v / hand.bb))} BB)`)
-  const who = (p: Position) => (p === hand.heroPosition ? 'Hero' : positionLabel(p))
+  const who = (p: Position) => (p === hand.heroPosition ? 'Hero' : positionLabel(p, hand.tableSize))
   const lines: string[] = []
 
   // Header
@@ -34,12 +34,12 @@ export function analysisText(hand: Hand, ctx: AnalysisContext): string {
     const lvl = hand.blindLevel
     const level = lvl ? `Level ${lvl.level}, ${formatNumber(lvl.sb)}/${formatNumber(lvl.bb)}${lvl.ante ? ` (${formatNumber(lvl.ante)} ante)` : ''}` : 'blinds unknown'
     const name = ctx.session?.tournament?.name
-    lines.push(`NLHE tournament${name ? ` (${name})` : ''}, ${hand.tableSize}-handed, ${level}. Amounts in big blinds.`)
+    lines.push(`NLHE tournament${name ? ` (${name})` : ''}, ${tableSizeLabel(hand.tableSize).toLowerCase()}, ${level}. Amounts in big blinds.`)
   } else {
     let stakes = `${cur}${formatNumber(hand.sb)}/${cur}${formatNumber(hand.bb)}`
     if (hand.straddle) stakes += ` with a ${cur}${formatNumber(hand.straddle)} UTG straddle`
     if (hand.ante) stakes += `, ${cur}${formatNumber(hand.ante)} BB ante`
-    lines.push(`NLHE cash ${stakes}, ${hand.tableSize}-handed (live).`)
+    lines.push(`NLHE cash ${stakes}, ${tableSizeLabel(hand.tableSize).toLowerCase()} (live).`)
   }
   if (where) lines.push(where)
   lines.push('')
@@ -47,13 +47,13 @@ export function analysisText(hand: Hand, ctx: AnalysisContext): string {
   // Players
   const hole = hand.hole ? (hand.hole.kind === 'exact' ? plainCards(hand.hole.cards) : `${hand.hole.handClass} (suits not recorded)`) : 'unknown cards'
   const hero = hand.players.find((p) => p.isHero)
-  lines.push(`Hero: ${hand.heroPosition ? positionLabel(hand.heroPosition) : 'position unknown'}, ${hole}${hero?.stack != null ? `, stack ${withBB(hero.stack)}` : ''}`)
+  lines.push(`Hero: ${hand.heroPosition ? positionLabel(hand.heroPosition, hand.tableSize) : 'position unknown'}, ${hole}${hero?.stack != null ? `, stack ${withBB(hero.stack)}` : ''}`)
   const villains = hand.players.filter((p) => !p.isHero)
   if (villains.length) {
     lines.push('Villains:')
     for (const v of villains) {
       const bits = [v.stack != null ? withBB(v.stack) : 'stack unknown', v.description, v.reads ? `Reads: ${v.reads}` : undefined]
-      lines.push(`- ${positionLabel(v.position)}: ${bits.filter(Boolean).join(' · ')}`)
+      lines.push(`- ${positionLabel(v.position, hand.tableSize)}: ${bits.filter(Boolean).join(' · ')}`)
     }
   }
 
@@ -89,7 +89,7 @@ export function analysisText(hand: Hand, ctx: AnalysisContext): string {
 
   // Showdown and result
   const shown = villains.filter((v) => v.shown)
-  for (const v of shown) lines.push(`${positionLabel(v.position)} shows ${plainCards(v.shown!)}`)
+  for (const v of shown) lines.push(`${positionLabel(v.position, hand.tableSize)} shows ${plainCards(v.shown!)}`)
   if (hand.result !== null) {
     const r = hand.result
     const verb = r > 0 ? 'won' : r < 0 ? 'lost' : 'broke even'

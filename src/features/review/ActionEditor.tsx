@@ -87,7 +87,7 @@ function ActionRow({
   return (
     <li className="py-1.5">
       <div className="flex items-center gap-1.5">
-        <span className={cx('w-14 shrink-0 text-sm font-bold', isHero && 'text-accent')}>{positionLabel(action.position)}</span>
+        <span className={cx('w-14 shrink-0 text-sm font-bold', isHero && 'text-accent')}>{positionLabel(action.position, hand.tableSize)}</span>
         <select
           aria-label="Action"
           value={action.type}
@@ -187,7 +187,7 @@ function ActionBuilder({ hand, replay, unit, onAdd }: { hand: Hand; replay: Repl
     const winner = replay.final.seats.find((s) => !s.folded)
     return (
       <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted">
-        Hand over{winner ? `: ${positionLabel(winner.position)} takes ${unit.format(replay.finalPot)}` : ''}
+        Hand over{winner ? `: ${positionLabel(winner.position, hand.tableSize)} takes ${unit.format(replay.finalPot)}` : ''}
         {replay.uncalled ? ` (${unit.format(replay.uncalled.amount)} uncalled returned)` : ''}.
       </p>
     )
@@ -245,14 +245,14 @@ function ActionBuilder({ hand, replay, unit, onAdd }: { hand: Hand; replay: Repl
               s.position === hand.heroPosition && s.position !== position && 'text-accent',
             )}
           >
-            {positionLabel(s.position)}
+            {positionLabel(s.position, hand.tableSize)}
             {s.position === state.toAct && <span className="ml-1 text-[10px] font-semibold opacity-70">next</span>}
           </button>
         ))}
       </div>
       {position && position !== state.toAct && skippedActions(state, hand, position).length > 0 && (
         <p className="text-xs text-muted">
-          Players before {positionLabel(position)} will be marked as{' '}
+          Players before {positionLabel(position, hand.tableSize)} will be marked as{' '}
           {state.currentBet > 0 || street === 'preflop' ? 'folding' : 'checking'}.
         </p>
       )}
@@ -293,7 +293,7 @@ function ActionBuilder({ hand, replay, unit, onAdd }: { hand: Hand; replay: Repl
         </div>
       )}
       <Button variant="primary" block icon="plus" disabled={!canAdd} onClick={add}>
-        Add {position ? positionLabel(position) : ''} {type ? ACTION_LABEL[type].toLowerCase() : ''}
+        Add {position ? positionLabel(position, hand.tableSize) : ''} {type ? ACTION_LABEL[type].toLowerCase() : ''}
       </Button>
     </div>
   )

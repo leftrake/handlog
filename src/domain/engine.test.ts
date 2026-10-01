@@ -341,3 +341,89 @@ describe('editor helpers', () => {
     expect(legalActions(s, 'UTG')).toEqual(['fold', 'call', 'raise', 'allin'])
   })
 })
+
+describe('short-handed and full-ring tables', () => {
+  it('heads-up: button posts the small blind and acts first preflop, last postflop', () => {
+    const s = initialState(setup({ tableSize: 2 }))
+    expect(s.pot).toBe(3)
+    expect(s.toAct).toBe('BTN')
+    expect(amountToCall(s, 'BTN')).toBe(1)
+
+    const r = replayHand(
+      setup({
+        tableSize: 2,
+        actions: [
+          ...acts('preflop', [
+            ['BTN', 'raise', 6],
+            ['BB', 'call'],
+          ]),
+          ...acts('flop', [
+            ['BB', 'check'],
+            ['BTN', 'bet', 4],
+            ['BB', 'call'],
+          ]),
+        ],
+      }),
+    )
+    expect(r.issues).toEqual([])
+    expect(r.final.pot).toBe(20)
+    expect(nextActor(r, { tableSize: 2, bb: 2 })).toEqual({ street: 'turn', position: 'BB' })
+  })
+
+  it('heads-up: the button can complete and the big blind gets the option', () => {
+    const r = replayHand(setup({ tableSize: 2, actions: acts('preflop', [['BTN', 'call']]) }))
+    expect(r.final.toAct).toBe('BB')
+    expect(legalActions(r.final, 'BB')).toEqual(['check', 'raise', 'allin'])
+  })
+
+  it('heads-up: flags acting out of turn postflop', () => {
+    const r = replayHand(
+      setup({
+        tableSize: 2,
+        actions: [
+          ...acts('preflop', [
+            ['BTN', 'call'],
+            ['BB', 'check'],
+          ]),
+          ...acts('flop', [['BTN', 'bet', 2]]),
+        ],
+      }),
+    )
+    expect(errors(r)).toEqual(['Out of turn: BB acts before BTN/SB'])
+  })
+
+  it('ignores a straddle heads-up with a warning', () => {
+    const r = replayHand(setup({ tableSize: 2, straddle: 4 }))
+    expect(r.initial.pot).toBe(3)
+    expect(r.issues).toEqual([{ severity: 'warning', message: 'There is no straddle heads-up, so it was ignored' }])
+  })
+
+  it('3-handed: the button straddles and action starts in the small blind', () => {
+    const s = initialState(setup({ tableSize: 3, straddle: 4 }))
+    expect(s.pot).toBe(7)
+    expect(s.toAct).toBe('SB')
+    const r = replayHand(
+      setup({
+        tableSize: 3,
+        straddle: 4,
+        actions: acts('preflop', [
+          ['SB', 'fold'],
+          ['BB', 'call'],
+          ['BTN', 'check'],
+        ]),
+      }),
+    )
+    expect(r.issues).toEqual([])
+    expect(nextActor(r, { tableSize: 3, bb: 2 })).toEqual({ street: 'flop', position: 'BB' })
+  })
+
+  it('10-handed: UTG+2 sits between UTG+1 and MP and skipped folds fill in', () => {
+    const s = initialState(setup({ tableSize: 10 }))
+    expect(skippedActions(s, { tableSize: 10 }, 'MP').map((x) => x.position)).toEqual(['UTG', 'UTG1', 'UTG2'])
+  })
+
+  it('flags a seat that does not exist at the table size', () => {
+    const r = replayHand(setup({ tableSize: 5, actions: acts('preflop', [['HJ', 'fold']]) }))
+    expect(errors(r)).toEqual(["HJ isn't a seat at a 5-handed table"])
+  })
+})

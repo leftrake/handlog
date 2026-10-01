@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import { TableSizePicker } from '../../components/TableSize'
 import { Button, Field, NumberInput, Page, PageHeader, Panel, Section, Segmented, TextInput } from '../../components/ui'
 import { useSettings } from '../../db/hooks'
 import { db } from '../../db/db'
 import { clearAllData, loadSampleData, removeSampleData, updateSettings } from '../../db/repo'
-import type { DisplayUnit, TableSize, Theme } from '../../domain/types'
+import type { DisplayUnit, Theme } from '../../domain/types'
 import { BackupPanel } from './BackupPanel'
 import { TagManager } from './TagManager'
 
@@ -103,15 +104,8 @@ export function SettingsPage() {
                 />
               </Field>
             </div>
-            <Field label="Table size">
-              <Segmented<TableSize>
-                value={settings.defaultTableSize}
-                onChange={(defaultTableSize) => updateSettings({ defaultTableSize })}
-                options={[
-                  { value: 9, label: '9-handed' },
-                  { value: 6, label: '6-handed' },
-                ]}
-              />
+            <Field label="Players at the table">
+              <TableSizePicker value={settings.defaultTableSize} onChange={(defaultTableSize) => updateSettings({ defaultTableSize })} />
             </Field>
             <p className="text-xs text-faint">
               Used for hands logged without a session. New sessions start from your last session's values.

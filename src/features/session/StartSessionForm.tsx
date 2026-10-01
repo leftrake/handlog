@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { TableSizePicker } from '../../components/TableSize'
 import { Button, Field, NumberInput, Segmented, TextInput } from '../../components/ui'
 import { useSessions } from '../../db/hooks'
 import { startSession } from '../../db/repo'
@@ -116,16 +117,8 @@ export function StartSessionForm({ settings }: { settings: Settings }) {
         </>
       )}
 
-      <Field label="Table size">
-        <Segmented
-          ariaLabel="Table size"
-          value={form.tableSize}
-          onChange={(tableSize) => set({ tableSize })}
-          options={[
-            { value: 9, label: '9-handed' },
-            { value: 6, label: '6-handed' },
-          ]}
-        />
+      <Field label="Players at the table" hint="You can change this during the session as players come and go.">
+        <TableSizePicker value={form.tableSize} onChange={(tableSize) => set({ tableSize })} />
       </Field>
 
       <Field label="Location">

@@ -1,7 +1,7 @@
 import { findDuplicates, formatCard } from './cards'
 import type { Issue, Replay } from './engine'
 import { knownCards } from './hand'
-import { isSeated, positionLabel } from './positions'
+import { isSeated, positionLabel, tableSizeLabel } from './positions'
 import { STREETS, WENT_TO, type Hand } from './types'
 
 const BOARD_NEEDED = { preflop: 0, flop: 3, turn: 4, river: 5 } as const
@@ -24,7 +24,7 @@ export function validateHand(hand: Hand, replay: Replay): Issue[] {
   if (hand.heroPosition && !isSeated(hand.heroPosition, hand.tableSize)) {
     issues.push({
       severity: 'error',
-      message: `${positionLabel(hand.heroPosition)} isn't a seat at a ${hand.tableSize}-handed table`,
+      message: `${positionLabel(hand.heroPosition)} isn't a seat at a ${tableSizeLabel(hand.tableSize).toLowerCase()} table`,
     })
   }
 

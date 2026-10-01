@@ -11,8 +11,10 @@ import { addTag, draftHand } from '../../db/repo'
 import { handClassOf, unavailableCards } from '../../domain/cards'
 import { formatBB, formatHandAmount, formatNumber, formatTime } from '../../domain/format'
 import { round2 } from '../../domain/money'
-import { isSeated, positionLabel, positionsFor } from '../../domain/positions'
+import { isSeated, positionLabel, positionsFor, tableSizeLabel } from '../../domain/positions'
 import type { Card, Hand, TableSize, WentTo } from '../../domain/types'
+import { PlayerStepper } from '../../components/TableSize'
+import { updateSession } from '../../db/repo'
 import { useLocalPref } from '../../lib/hooks'
 import { applyPadKey } from '../../lib/padInput'
 import { useAutosave } from './useAutosave'
@@ -36,6 +38,19 @@ const WENT_OPTIONS: { value: WentTo; label: string }[] = [
   { value: 'river', label: 'River' },
   { value: 'showdown', label: 'Showdown' },
 ]
+
+/** Position buttons per row, so every table size fills neat rows of big targets. */
+const POSITION_COLS: Record<TableSize, string> = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-2',
+  5: 'grid-cols-3',
+  6: 'grid-cols-3',
+  7: 'grid-cols-4',
+  8: 'grid-cols-4',
+  9: 'grid-cols-3',
+  10: 'grid-cols-5',
+}
 
 const WENT_LABEL = Object.fromEntries(WENT_OPTIONS.map((o) => [o.value, o.label])) as Record<WentTo, string>
 
@@ -221,14 +236,26 @@ export function QuickCapture() {
       hand.unit === 'bb' && hand.blindLevel
         ? `L${hand.blindLevel.level} · ${formatNumber(hand.blindLevel.sb)}/${formatNumber(hand.blindLevel.bb)}`
         : `${formatNumber(hand.sb)}/${formatNumber(hand.bb)}`
-    if (!hand.sessionId) return `No active session · ${stakes} default`
-    return [stakes, session?.location].filter(Boolean).join(' · ')
+    const players = tableSizeLabel(hand.tableSize)
+    if (!hand.sessionId) return `No active session · ${stakes} · ${players}`
+    return [stakes, session?.location, players].filter(Boolean).join(' · ')
   })()
   const tagMap = new Map(tags.map((t) => [t.id, t]))
   const toggleTag = (tagId: string) =>
     commit({ tagIds: hand.tagIds.includes(tagId) ? hand.tagIds.filter((t) => t !== tagId) : [...hand.tagIds, tagId] })
 
   const next = () => setFocus(firstMissing(hand) ?? 'extras')
+
+  /** Players came or went: applies to this hand and, for a new hand in a live session, the ones after it. */
+  const changeTableSize = (tableSize: TableSize) => {
+    commit({
+      tableSize,
+      heroPosition: hand.heroPosition && isSeated(hand.heroPosition, tableSize) ? hand.heroPosition : null,
+    })
+    if (!id && hand.sessionId && session && session.endedAt === null && session.tableSize !== tableSize) {
+      void updateSession(hand.sessionId, { tableSize })
+    }
+  }
 
   // ── panels ──
   let panel: ReactNode
@@ -252,10 +279,10 @@ export function QuickCapture() {
       break
     case 'position':
       panel = (
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className={cx('grid gap-1.5', POSITION_COLS[hand.tableSize])}>
           {positionsFor(hand.tableSize).map((p) => (
             <BigKey key={p} active={hand.heroPosition === p} onClick={() => commit({ heroPosition: p }, true)}>
-              {positionLabel(p)}
+              {positionLabel(p, hand.tableSize)}
             </BigKey>
           ))}
         </div>
@@ -468,7 +495,7 @@ export function QuickCapture() {
 
           <div className="grid grid-cols-3 gap-2">
             <SummaryChip label="Position" active={focus === 'position'} onClick={() => setFocus('position')}>
-              {hand.heroPosition ? positionLabel(hand.heroPosition) : null}
+              {hand.heroPosition ? positionLabel(hand.heroPosition, hand.tableSize) : null}
             </SummaryChip>
             <SummaryChip label="Went to" active={focus === 'wentTo'} onClick={() => setFocus('wentTo')}>
               {hand.wentTo ? WENT_LABEL[hand.wentTo] : null}
@@ -503,26 +530,6 @@ export function QuickCapture() {
             {hand.flagged && <Icon name="flag" size={16} className="shrink-0 text-warn" />}
           </button>
 
-          {hand.sessionId === null && focus === 'position' && (
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-surface px-3 py-2 text-sm">
-              <span className="text-muted">Table size</span>
-              <Segmented<TableSize>
-                size="sm"
-                className="w-40"
-                value={hand.tableSize}
-                onChange={(tableSize) =>
-                  commit({
-                    tableSize,
-                    heroPosition: hand.heroPosition && isSeated(hand.heroPosition, tableSize) ? hand.heroPosition : null,
-                  })
-                }
-                options={[
-                  { value: 9, label: '9' },
-                  { value: 6, label: '6' },
-                ]}
-              />
-            </div>
-          )}
         </div>
       </div>
 
@@ -532,6 +539,7 @@ export function QuickCapture() {
           <div className="mb-2 flex h-8 items-center justify-between gap-2 px-1">
             <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted">{PANEL_TITLE[focus]}</h2>
             <div className="flex items-center gap-2">
+              {focus === 'position' && <PlayerStepper value={hand.tableSize} onChange={changeTableSize} />}
               {focus === 'hole' && (
                 <Segmented<HoleMode>
                   size="sm"

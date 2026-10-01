@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Icon } from '../../components/icons'
+import { PlayerStepper } from '../../components/TableSize'
 import { Button, Field, NumberInput, Panel, Section, Sheet, TextArea } from '../../components/ui'
 import { useSessionHands, useTags } from '../../db/hooks'
 import { addRebuy, endSession, setBlindLevel, updateSession } from '../../db/repo'
 import { formatDuration, formatMoney, formatNumber, formatShortTime } from '../../domain/format'
+import { tableSizeLabel } from '../../domain/positions'
 import { blindLevelLabel, sessionDurationMs, stakesLabel, totalInvested } from '../../domain/session'
 import type { BlindLevel, Session, Settings } from '../../domain/types'
 import { useNow } from '../../lib/hooks'
@@ -36,7 +38,7 @@ export function ActiveSession({ session, settings }: { session: Session; setting
               {isTourney ? session.tournament?.name || 'Tournament' : stakesLabel(session)}
             </div>
             <div className="truncate text-sm text-muted">
-              {[session.location, `${session.tableSize}-handed`, isTourney && session.tournament && blindLevelLabel(session.tournament.level)]
+              {[session.location, tableSizeLabel(session.tableSize), isTourney && session.tournament && blindLevelLabel(session.tournament.level)]
                 .filter(Boolean)
                 .join(' · ')}
             </div>
@@ -51,6 +53,10 @@ export function ActiveSession({ session, settings }: { session: Session; setting
               </div>
             )}
           </div>
+        </div>
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-surface-2/60 py-1 pl-3 pr-1">
+          <span className="text-sm text-muted">Players at the table</span>
+          <PlayerStepper value={session.tableSize} onChange={(tableSize) => updateSession(session.id, { tableSize })} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Button icon="plus" onClick={() => setSheet('rebuy')}>

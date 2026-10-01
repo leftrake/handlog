@@ -3,7 +3,7 @@
 import { advanceTo, type Issue, type Replay, type Step, type TableState } from './engine'
 import { potOdds, type PotOdds } from './odds'
 import { positionLabel } from './positions'
-import { STREETS, type Hand, type Position, type Street } from './types'
+import { STREETS, type Hand, type Position, type Street, type TableSize } from './types'
 
 export type FrameKind = 'start' | 'deal' | 'action' | 'end'
 
@@ -35,9 +35,9 @@ export function boardCount(street: Street): number {
   return BOARD_FOR_STREET[street]
 }
 
-function describe(step: Step, hero: Position | null, fmt: (n: number) => string): string {
+function describe(step: Step, hero: Position | null, size: TableSize, fmt: (n: number) => string): string {
   const a = step.action
-  const who = a.position === hero ? `You (${positionLabel(a.position)})` : positionLabel(a.position)
+  const who = a.position === hero ? `You (${positionLabel(a.position, size)})` : positionLabel(a.position, size)
   const you = a.position === hero
   const to = step.after.seats.find((s) => s.position === a.position)?.committed ?? 0
   switch (a.type) {
@@ -104,7 +104,7 @@ export function buildFrames(hand: Hand, replay: Replay, fmt: (n: number) => stri
       kind: 'action',
       state: step.after,
       street,
-      caption: describe(step, hero, fmt),
+      caption: describe(step, hero, hand.tableSize, fmt),
       actor: step.action.position,
       issues: step.issues,
       decision: decisionFor(steps[i + 1], hero),
@@ -129,11 +129,11 @@ export function buildFrames(hand: Hand, replay: Replay, fmt: (n: number) => stri
   const parts: string[] = []
   if (final.handOver) {
     const winner = final.seats.find((s) => !s.folded)
-    if (winner) parts.push(`${winner.position === hero ? 'You win' : `${positionLabel(winner.position)} wins`} ${fmt(replay.finalPot)}`)
+    if (winner) parts.push(`${winner.position === hero ? 'You win' : `${positionLabel(winner.position, hand.tableSize)} wins`} ${fmt(replay.finalPot)}`)
   } else {
     parts.push(hand.wentTo === 'showdown' ? `Showdown · pot ${fmt(replay.finalPot)}` : `Pot ${fmt(replay.finalPot)}`)
   }
-  if (replay.uncalled) parts.push(`${fmt(replay.uncalled.amount)} uncalled returned to ${positionLabel(replay.uncalled.position)}`)
+  if (replay.uncalled) parts.push(`${fmt(replay.uncalled.amount)} uncalled returned to ${positionLabel(replay.uncalled.position, hand.tableSize)}`)
   if (hand.result !== null) parts.push(hand.result >= 0 ? `Net +${fmt(hand.result)}` : `Net −${fmt(-hand.result)}`)
   frames.push({ kind: 'end', state: last, street, caption: parts.join(' · '), actor: null, issues: [], decision: null, reveal: true })
 
