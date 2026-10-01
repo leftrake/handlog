@@ -40,6 +40,7 @@ export type DrawStreet = 'flop' | 'turn'
 
 export interface EquityEstimate {
   label: string
+  ruleName: 'Rule of 2' | 'Rule of 4'
   /** Rule-of-thumb percentage (0–100). */
   rule: number
   ruleFormula: string
@@ -63,6 +64,7 @@ export function outsEquity(outs: number, street: DrawStreet): EquityEstimate[] {
     return [
       {
         label: 'River (1 card)',
+        ruleName: 'Rule of 2',
         rule: Math.min(100, o * 2),
         ruleFormula: `${o} × 2`,
         exact: (o / 46) * 100,
@@ -74,6 +76,7 @@ export function outsEquity(outs: number, street: DrawStreet): EquityEstimate[] {
   return [
     {
       label: 'Turn (1 card)',
+      ruleName: 'Rule of 2',
       rule: Math.min(100, o * 2),
       ruleFormula: `${o} × 2`,
       exact: (o / 47) * 100,
@@ -81,6 +84,7 @@ export function outsEquity(outs: number, street: DrawStreet): EquityEstimate[] {
     },
     {
       label: 'Turn or river (2 cards)',
+      ruleName: 'Rule of 4',
       rule: Math.min(100, o * 4),
       ruleFormula: `${o} × 4`,
       exact: (1 - missBoth) * 100,

@@ -409,11 +409,16 @@ export function nextActor(replay: Replay, setup: Pick<HandSetup, 'tableSize' | '
   return probe.toAct ? { street: probe.street, position: probe.toAct } : null
 }
 
-/** The state a new action on `street` would act against (advancing a closed round if needed). */
-export function stateForStreet(replay: Replay, setup: Pick<HandSetup, 'tableSize' | 'bb'>, street: Street): TableState {
-  const s = cloneState(replay.final)
+/** A copy of `state` moved forward to the start of `street`: bets swept into the pot, action reset. */
+export function advanceTo(state: TableState, setup: Pick<HandSetup, 'tableSize' | 'bb'>, street: Street): TableState {
+  const s = cloneState(state)
   while (STREETS.indexOf(s.street) < STREETS.indexOf(street)) advanceStreet(s, setup.tableSize, setup.bb)
   return s
+}
+
+/** The state a new action on `street` would act against (advancing a closed round if needed). */
+export function stateForStreet(replay: Replay, setup: Pick<HandSetup, 'tableSize' | 'bb'>, street: Street): TableState {
+  return advanceTo(replay.final, setup, street)
 }
 
 /** Actions a seat could legally take in `state`. */
