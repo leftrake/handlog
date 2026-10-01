@@ -16,7 +16,8 @@ export default defineConfig({
       // Ask before swapping in a new version, so an update never reloads mid-capture.
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
+      // Every public asset is already matched by workbox.globPatterns; don't list icons twice.
+      includeManifestIcons: false,
       manifest: {
         name: 'HandLog',
         short_name: 'HandLog',
